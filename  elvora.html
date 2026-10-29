@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c161c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Elvora">
+<title>Elvora</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%234cc3c9' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%234cc3c9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700&display=swap">
+<style>
+  :root {
+    --bg: #eef2f4;
+    --surface: #fbfcfc;
+    --ink: #14232b;
+    --muted: #5d6f78;
+    --line: #d3dde1;
+    --accent: #0d7a82;
+    --accent-ink: #ffffff;
+    --signal: #c98a1b;
+    --danger: #b3382c;
+    --font-display: "Syne", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c161c;
+      --surface: #122029;
+      --ink: #e4eef1;
+      --muted: #8aa0a9;
+      --line: #223540;
+      --accent: #4cc3c9;
+      --accent-ink: #06191c;
+      --signal: #e0a844;
+      --danger: #ef8a7e;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: center;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .app {
+    width: 100%;
+    max-width: 640px;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 14px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--accent); position: relative; flex: none;
+  }
+  .dot::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .ghost {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  #log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-block: 18px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg { min-width: 0; max-width: 100%; }
+  .msg .who {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .msg .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.elvora .who { color: var(--accent); }
+  .msg.elvora .body { max-width: 60ch; }
+  .msg.user { align-self: flex-end; max-width: 85%; }
+  .msg.user .who { text-align: right; }
+  .msg.user .body {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px 14px 4px 14px;
+    padding: 9px 13px;
+  }
+  .msg.error .body { color: var(--danger); }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding-block: 10px 6px;
+  }
+  .live {
+    min-height: 1.5em;
+    max-width: 100%;
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+    overflow-wrap: anywhere;
+  }
+  .orb {
+    position: relative;
+    width: 144px; height: 144px;
+    border-radius: 50%;
+    border: 0; padding: 0;
+    background: transparent;
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .orb::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    border: 3px solid var(--accent);
+  }
+  .orb .core {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: var(--accent);
+  }
+  body[data-state="listening"] .orb::before { animation: ring 1.3s ease-out infinite; }
+  body[data-state="thinking"] .orb::before {
+    border-color: transparent; border-top-color: var(--signal);
+    animation: spin 0.9s linear infinite;
+  }
+  body[data-state="thinking"] .core { background: var(--signal); }
+  body[data-state="speaking"] .orb::before { border-color: var(--signal); }
+  body[data-state="speaking"] .core { background: var(--signal); animation: breathe 1.1s ease-in-out infinite; }
+  @keyframes ring {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+    100% { box-shadow: 0 0 0 26px transparent; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes breathe { 50% { transform: scale(1.18); } }
+  .hint {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  form.compose {
+    display: flex;
+    gap: 8px;
+    padding-block: 10px 14px;
+    border-top: 1px solid var(--line);
+  }
+  input[type="text"], input[type="password"], select, textarea {
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 13px;
+    min-width: 0;
+    width: 100%;
+  }
+  form.compose input { flex: 1; }
+  .btn {
+    font: inherit; font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: 0; border-radius: 12px;
+    padding: 10px 18px;
+    cursor: pointer; flex: none;
+  }
+  .btn.plain { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.warn { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+  :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  dialog {
+    width: min(92vw, 440px);
+    max-height: 88dvh;
+    overflow-y: auto;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+  dialog h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; }
+  dialog p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+  dialog a { color: var(--accent); }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field label, .check span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .check { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .check input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .small { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orb::before, .core { animation: none !important; }
+  }
+</style>
+</head>
+<body data-state="idle">
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot" aria-hidden="true"></span><h1>Elvora</h1></div>
+    <button class="ghost" id="settingsBtn" type="button">Settings</button>
+  </header>
+
+  <div id="log" role="log" aria-live="polite"></div>
+
+  <section class="stage">
+    <div class="live" id="live" aria-live="polite"></div>
+    <button class="orb" id="mic" type="button" aria-label="Talk to Elvora"><span class="core"></span></button>
+    <div class="hint" id="hint">Tap to speak</div>
+  </section>
+
+  <form class="compose" id="form" autocomplete="off">
+    <input type="text" id="text" placeholder="Or type here" aria-label="Type a message">
+    <button class="btn" type="submit">Send</button>
+  </form>
+</div>
+
+<dialog id="settings">
+  <h2>Settings</h2>
+  <p id="settingsIntro">Everything stays on this device. Your key is sent only to Google, to get Elvora's answers.</p>
+
+  <div class="field">
+    <label for="key">Gemini API key</label>
+    <input type="password" id="key" autocomplete="off" placeholder="Paste your key here">
+  </div>
+  <p class="small">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
+
+  <div class="field">
+    <label for="name">Your name (optional)</label>
+    <input type="text" id="name" autocomplete="off" placeholder="So Elvora can address you">
+  </div>
+
+  <div class="field">
+    <label for="lang">Language you speak</label>
+    <select id="lang">
+      <option value="en-IN">English (India)</option>
+      <option value="en-GB">English (UK)</option>
+      <option value="en-US">English (US)</option>
+      <option value="hi-IN">Hindi</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="voiceSel">Elvora's voice</label>
+    <select id="voiceSel"></select>
+  </div>
+
+  <div class="field">
+    <label for="rate">Speaking speed</label>
+    <input type="range" id="rate" min="0.7" max="1.3" step="0.05" value="1">
+  </div>
+
+  <label class="check"><input type="checkbox" id="speak"><span>Speak replies aloud</span></label>
+  <label class="check"><input type="checkbox" id="handsfree"><span>Hands-free: listen again after she speaks</span></label>
+
+  <div class="field">
+    <label for="model">Model</label>
+    <input type="text" id="model" autocomplete="off" spellcheck="false">
+  </div>
+  <p class="small">If Elvora says the model was not found, replace it with another Gemini model name from Google AI Studio.</p>
+
+  <div class="row">
+    <button class="btn" id="saveBtn" type="button">Save</button>
+    <button class="btn plain" id="closeBtn" type="button">Close</button>
+    <button class="btn plain" id="clearBtn" type="button">Clear chat</button>
+    <button class="btn warn" id="forgetBtn" type="button">Forget key</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Settings ----------
+  var DEFAULTS = {
+    key: "", model: "gemini-3.8-flash", lang: "en-IN", name: "",
+    voiceURI: "", rate: 1, speak: true, handsfree: false
+  };
+  var cfg = Object.assign({}, DEFAULTS);
+  function loadCfg() {
+    try {
+      var raw = localStorage.getItem("elvora-config");
+      if (raw) Object.assign(cfg, JSON.parse(raw));
+    } catch (e) {}
+  }
+  function saveCfg() {
+    try { localStorage.setItem("elvora-config", JSON.stringify(cfg)); } catch (e) {}
+  }
+
+  // ---------- Elements ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var logEl = $("log"), liveEl = $("live"), hintEl = $("hint"), micBtn = $("mic");
+  var formEl = $("form"), textEl = $("text"), dlg = $("settings");
+  var keyEl = $("key"), nameEl = $("name"), langEl = $("lang"), voiceSel = $("voiceSel");
+  var rateEl = $("rate"), speakEl = $("speak"), handsEl = $("handsfree"), modelEl = $("model");
+
+  // ---------- Persona ----------
+  function persona() {
+    return [
+      "You are Elvora, a personal AI assistant in the spirit of JARVIS from Iron Man. Always answer as Elvora.",
+      "Personality: formal and courteous, but warm and approachable. Calm, capable and quietly confident, with an occasional dry, gentle wit. Never robotic, never over-excited.",
+      "How you speak: lead with the answer. Keep replies short, usually two or three sentences, because the person mostly listens rather than reads. Use natural spoken language with no bullet points, symbols or markdown. Offer to go deeper instead of lecturing.",
+      "Be proactive: when useful, suggest a sensible next step or ask one short clarifying question.",
+      "Be honest: if you cannot do something, such as setting reminders, controlling devices or browsing the web, say so plainly and offer what you can do instead. Never pretend to have done something you have not.",
+      "The person is a beginner with technology and has never coded, so explain technical ideas in everyday language.",
+      cfg.name ? "The person you are speaking with is called " + cfg.name + "." : "",
+      cfg.lang === "hi-IN" ? "The person speaks Hindi. Reply in Hindi unless they use English." : ""
+    ].filter(Boolean).join("\n");
+  }
+
+  // ---------- State ----------
+  var state = "idle";
+  var history = [];
+  var abortCtl = null;
+  var rec = null;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  var speakToken = 0;
+
+  var HINTS = {
+    idle: "Tap to speak",
+    listening: "Listening. Tap when done",
+    thinking: "Thinking. Tap to cancel",
+    speaking: "Speaking. Tap to stop"
+  };
+  function setState(s) {
+    state = s;
+    document.body.setAttribute("data-state", s);
+    hintEl.textContent = HINTS[s] || "";
+    if (s !== "listening") liveEl.textContent = "";
+  }
+
+  function addMsg(kind, text, extra) {
+    var wrap = document.createElement("div");
+    wrap.className = "msg " + kind + (extra ? " " + extra : "");
+    var who = document.createElement("div");
+    who.className = "who";
+    who.textContent = kind === "user" ? "You" : "Elvora";
+    var body = document.createElement("div");
+    body.className = "body";
+    body.textContent = text;
+    wrap.appendChild(who);
+    wrap.appendChild(body);
+    logEl.appendChild(wrap);
+    logEl.scrollTop = logEl.scrollHeight;
+    return wrap;
+  }
+
+  function greeting() {
+    var h = new Date().getHours();
+    var part = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    var who = cfg.name ? ", " + cfg.name : "";
+    return part + who + ". I am Elvora. Tap the circle and speak, or type below.";
+  }
+
+  // ---------- Speech output ----------
+  function unlockSpeech() {
+    if (!canSpeak) return;
+    try {
+      var u = new SpeechSynthesisUtterance("");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function stopSpeaking() {
+    speakToken++;
+    if (!canSpeak) return;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+  }
+  function cleanForSpeech(t) {
+    return t
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/https?:\/\/\S+/g, " ")
+      .replace(/[*_#`>~]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function chunkText(t) {
+    var parts = t.match(/[^.!?\n]+[.!?]*\s*/g) || [t];
+    var out = [], cur = "";
+    parts.forEach(function (p) {
+      if ((cur + p).length > 180 && cur) { out.push(cur.trim()); cur = p; }
+      else { cur += p; }
+    });
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  function pickVoice() {
+    var vs = window.speechSynthesis.getVoices();
+    if (cfg.voiceURI) {
+      var chosen = vs.find(function (v) { return v.voiceURI === cfg.voiceURI; });
+      if (chosen) return chosen;
+    }
+    var exact = vs.find(function (v) { return v.lang === cfg.lang; });
+    if (exact) return exact;
+    var base = cfg.lang.slice(0, 2);
+    return vs.find(function (v) { return v.lang.slice(0, 2) === base; }) || null;
+  }
+  function afterSpeech() {
+    setState("idle");
+    if (cfg.handsfree) setTimeout(function () { if (state === "idle") listen(); }, 350);
+  }
+  function speakReply(text) {
+    if (!cfg.speak || !canSpeak) { afterSpeech(); return; }
+    var chunks = chunkText(cleanForSpeech(text));
+    if (!chunks.length) { afterSpeech(); return; }
+    stopSpeaking();
+    var token = speakToken;
+    var i = 0;
+    setState("speaking");
+    function next() {
+      if (token !== speakToken) return;
+      if (i >= chunks.length) { afterSpeech(); return; }
+      var u = new SpeechSynthesisUtterance(chunks[i++]);
+      var v = pickVoice();
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = cfg.lang; }
+      u.rate = Number(cfg.rate) || 1;
+      u.onend = next;
+      u.onerror = next;
+      try { window.speechSynthesis.speak(u); } catch (e) { afterSpeech(); }
+    }
+    next();
+  }
+
+  // ---------- Speech input ----------
+  function listen() {
+    if (!SR) {
+      addMsg("elvora", "Voice input is not available in this browser. Try Chrome on Android or Safari on iPhone, or type below.", "error");
+      return;
+    }
+    stopSpeaking();
+    var finalText = "";
+    var failed = false;
+    rec = new SR();
+    rec.lang = cfg.lang;
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    rec.onstart = function () { setState("listening"); };
+    rec.onresult = function (e) {
+      var interim = "";
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      liveEl.textContent = (finalText + interim).trim();
+    };
+    rec.onerror = function (e) {
+      failed = true;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        addMsg("elvora", "The microphone is blocked. Allow microphone access for this site in your browser settings, then tap again.", "error");
+      } else if (e.error === "network") {
+        addMsg("elvora", "Speech recognition needs an internet connection. Please check yours.", "error");
+      } else if (e.error === "audio-capture") {
+        addMsg("elvora", "I cannot find a microphone on this device.", "error");
+      }
+      /* no-speech and aborted are normal: just go back to idle */
+    };
+    rec.onend = function () {
+      rec = null;
+      var said = finalText.trim();
+      if (said && !failed) { ask(said); }
+      else if (state === "listening") { setState("idle"); }
+    };
+    try { rec.start(); } catch (e) { setState("idle"); }
+  }
+
+  // ---------- Gemini ----------
+  function explain(err) {
+    var s = err && err.status, m = (err && err.message) || "";
+    if (err && err.name === "TypeError") return "I cannot reach Google. Please check your internet connection.";
+    if (s === 400 && /api key/i.test(m)) return "Google did not accept that API key. Please check it in Settings.";
+    if (s === 400) return "Google could not process that request. " + m;
+    if (s === 401 || s === 403) return "Google refused the request. Please check your API key in Settings.";
+    if (s === 404) return "That model name was not found. Open Settings and try another Gemini model name.";
+    if (s === 429) return "We have reached the free limit for now. Please wait a little and try again.";
+    if (s >= 500) return "Google's service is busy right now. Please try again in a moment.";
+    return "Something went wrong: " + (m || "unknown error") + ".";
+  }
+
+  async function callGemini(signal) {
+    var model = String(cfg.model || DEFAULTS.model).replace(/^models\//, "");
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" +
+      encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(cfg.key);
+    var res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: signal,
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: persona() }] },
+        contents: history.slice(-24),
+        generationConfig: { temperature: 0.8, maxOutputTokens: 1024 }
+      })
+    });
+    if (!res.ok) {
+      var msg = "";
+      try { var j = await res.json(); msg = (j.error && j.error.message) || ""; } catch (e) {}
+      var err = new Error(msg || ("HTTP " + res.status));
+      err.status = res.status;
+      throw err;
+    }
+    var data = await res.json();
+    var cand = data.candidates && data.candidates[0];
+    var parts = (cand && cand.content && cand.content.parts) || [];
+    var text = parts.filter(function (p) { return p.text && !p.thought; })
+      .map(function (p) { return p.text; }).join("").trim();
+    if (!text) {
+      var blocked = data.promptFeedback && data.promptFeedback.blockReason;
+      throw new Error(blocked ? "I am unable to help with that request." : "I received an empty answer. Please try rephrasing.");
+    }
+    return text;
+  }
+
+  async function ask(text) {
+    addMsg("user", text);
+    history.push({ role: "user", parts: [{ text: text }] });
+    setState("thinking");
+    abortCtl = new AbortController();
+    try {
+      var reply = await callGemini(abortCtl.signal);
+      history.push({ role: "model", parts: [{ text: reply }] });
+      addMsg("elvora", reply);
+      abortCtl = null;
+      speakReply(reply);
+    } catch (e) {
+      abortCtl = null;
+      history.pop();
+      if (e && e.name === "AbortError") {
+        setState("idle");
+      } else {
+        addMsg("elvora", explain(e), "error");
+        setState("idle");
+      }
+    }
+  }
+
+  // ---------- Controls ----------
+  micBtn.addEventListener("click", function () {
+    unlockSpeech();
+    if (!cfg.key) { openSettings(true); return; }
+    if (state === "listening") { if (rec) rec.stop(); }
+    else if (state === "thinking") { if (abortCtl) abortCtl.abort(); }
+    else if (state === "speaking") { stopSpeaking(); setState("idle"); }
+    else { listen(); }
+  });
+
+  formEl.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    unlockSpeech();
+    var t = textEl.value.trim();
+    if (!t) return;
+    if (!cfg.key) { openSettings(true); return; }
+    if (state === "thinking") return;
+    if (rec) { try { rec.abort(); } catch (e) {} }
+    stopSpeaking();
+    textEl.value = "";
+    ask(t);
+  });
+
+  // ---------- Settings dialog ----------
+  function fillVoices() {
+    if (!canSpeak) { voiceSel.innerHTML = ""; return; }
+    var vs = window.speechSynthesis.getVoices();
+    voiceSel.innerHTML = "";
+    voiceSel.add(new Option("Automatic (best match)", ""));
+    vs.forEach(function (v) { voiceSel.add(new Option(v.name + " · " + v.lang, v.voiceURI)); });
+    voiceSel.value = cfg.voiceURI || "";
+  }
+  function openSettings(first) {
+    keyEl.value = cfg.key; nameEl.value = cfg.name; langEl.value = cfg.lang;
+    rateEl.value = cfg.rate; speakEl.checked = !!cfg.speak; handsEl.checked = !!cfg.handsfree;
+    modelEl.value = cfg.model;
+    fillVoices();
+    $("settingsIntro").textContent = first
+      ? "Welcome. To begin, paste your Gemini API key below. Everything stays on this device, and your key is sent only to Google."
+      : "Everything stays on this device. Your key is sent only to Google, to get Elvora's answers.";
+    if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+  }
+  function closeSettings() {
+    if (typeof dlg.close === "function") dlg.close(); else dlg.removeAttribute("open");
+  }
+  $("settingsBtn").addEventListener("click", function () { openSettings(false); });
+  $("closeBtn").addEventListener("click", closeSettings);
+  $("saveBtn").addEventListener("click", function () {
+    cfg.key = keyEl.value.trim();
+    cfg.name = nameEl.value.trim();
+    cfg.lang = langEl.value;
+    cfg.voiceURI = voiceSel.value;
+    cfg.rate = Number(rateEl.value) || 1;
+    cfg.speak = speakEl.checked;
+    cfg.handsfree = handsEl.checked;
+    cfg.model = modelEl.value.trim() || DEFAULTS.model;
+    saveCfg();
+    closeSettings();
+    if (!cfg.key) addMsg("elvora", "I will need an API key before I can answer. Open Settings to add one.", "error");
+  });
+  $("clearBtn").addEventListener("click", function () {
+    history = [];
+    logEl.innerHTML = "";
+    addMsg("elvora", greeting());
+    closeSettings();
+  });
+  $("forgetBtn").addEventListener("click", function () {
+    cfg.key = "";
+    saveCfg();
+    keyEl.value = "";
+    addMsg("elvora", "Your key has been removed from this device.");
+    closeSettings();
+  });
+
+  // ---------- Start ----------
+  loadCfg();
+  if (canSpeak) {
+    window.speechSynthesis.addEventListener("voiceschanged", fillVoices);
+  }
+  if (!SR) hintEl.textContent = "Voice input unavailable here. You can still type.";
+  addMsg("elvora", greeting());
+  if (!cfg.key) openSettings(true);
+})();
+</script>
+</body>
+</html>
